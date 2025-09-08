@@ -21,7 +21,7 @@ export function loadLocalRows(seedTuples) {
     kind,
     status,
     created_at: now,
-    votes: Math.floor(Math.random() * 8),
+    votes: 0,
   }));
   localStorage.setItem(ROWS_KEY, JSON.stringify(rows));
   if (!localStorage.getItem(VOTES_KEY))
