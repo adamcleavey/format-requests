@@ -4,6 +4,7 @@ import helmet from "helmet";
 import morgan from "morgan";
 import { Pool, PoolClient } from "pg";
 import { Server } from "http";
+import path from "path";
 
 /**
  * server.ts
@@ -62,10 +63,21 @@ const pool = new Pool({
 /* --- App setup --- */
 const app = express();
 
+const clientDist = path.join(__dirname, "client");
+
 app.use(cors()); // Consider locking origin in production
 app.use(helmet());
 app.use(express.json());
 app.use(morgan(NODE_ENV === "production" ? "combined" : "dev"));
+
+// Serve static client files (built into dist/client)
+// This ensures the production server responds to "/" and serves the SPA.
+app.use(express.static(clientDist));
+
+// Fallback to index.html for client-side routing (SPA)
+app.get("*", (_req: Request, res: Response) => {
+  res.sendFile(path.join(clientDist, "index.html"));
+});
 
 /* --- Helpers --- */
 function sendError(res: Response, status = 500, error = "server_error") {

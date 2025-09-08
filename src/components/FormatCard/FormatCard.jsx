@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import styles from "./FormatCard.module.css";
+import * as styles from "./FormatCard.module.css";
 
 const statusClass = (s) =>
   ({

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import styles from "./Header.module.css";
+import * as styles from "./Header.module.css";
 
 export default function Header({ count, adminActive, onAdminActivate }) {
   const [key, setKey] = useState("");

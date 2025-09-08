@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import styles from "./AdminBar.module.css";
+import * as styles from "./AdminBar.module.css";
 
 export default function AdminBar({ visible, onAdd }) {
   const [name, setName] = useState("");

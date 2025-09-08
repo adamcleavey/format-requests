@@ -3,7 +3,7 @@ import Header from "./components/Header/Header.jsx";
 import Toolbar from "./components/Toolbar/Toolbar.jsx";
 import AdminBar from "./components/AdminBar/AdminBar.jsx";
 import FormatCard from "./components/FormatCard/FormatCard.jsx";
-import styles from "./App.module.css";
+import * as styles from "./App.module.css";
 import { seed } from "./data/seed";
 import {
   loadLocalRows,
@@ -74,7 +74,7 @@ const init = (): State => {
     votes,
     query: "",
     kind: "",
-    status: "",
+    status: "Requested",
     sort: "votes-desc",
   };
 };
@@ -332,10 +332,6 @@ export default function App() {
             />
           ))}
         </div>
-        <p className={styles.footer}>
-          Local-first MVP. Flip <code>USE_API=true</code> in{" "}
-          <code>App.jsx</code> to integrate your backend.
-        </p>
       </main>
     </div>
   );

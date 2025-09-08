@@ -1,5 +1,5 @@
 import React from "react";
-import styles from "./Toolbar.module.css";
+import * as styles from "./Toolbar.module.css";
 
 export default function Toolbar({ query, kind, status, sort, onChange }) {
   return (
