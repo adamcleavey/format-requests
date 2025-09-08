@@ -3,7 +3,7 @@ import Header from "./components/Header/Header.jsx";
 import Toolbar from "./components/Toolbar/Toolbar.jsx";
 import AdminBar from "./components/AdminBar/AdminBar.jsx";
 import FormatCard from "./components/FormatCard/FormatCard.jsx";
-import * as styles from "./App.module.css";
+import styles from "./App.module.css";
 import { seed } from "./data/seed";
 import {
   loadLocalRows,
