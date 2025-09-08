@@ -5,6 +5,7 @@ import morgan from "morgan";
 import { Pool, PoolClient } from "pg";
 import { Server } from "http";
 import path from "path";
+import fs from "fs";
 
 /**
  * server.ts
@@ -64,6 +65,14 @@ const pool = new Pool({
 const app = express();
 
 const clientDist = path.join(__dirname, "client");
+
+let indexHtml = "";
+try {
+  indexHtml = fs.readFileSync(path.join(clientDist, "index.html"), "utf8");
+} catch (err) {
+  console.warn("Could not read index.html at startup:", err);
+  indexHtml = "";
+}
 
 app.use(cors()); // Consider locking origin in production
 app.use(helmet());
@@ -354,7 +363,20 @@ app.use(express.static(clientDist));
 
 // Fallback to index.html for client-side routing (SPA)
 app.get("*", (_req: Request, res: Response) => {
-  res.sendFile(path.join(clientDist, "index.html"));
+  const apiUrl = process.env.RENDER_EXTERNAL_URL || "";
+  // use JSON.stringify to safely escape the string
+  const injection = `<script>window.__API_URL__ = ${JSON.stringify(apiUrl)};</script>`;
+  if (indexHtml) {
+    // insert injection right before the closing </head> (if present)
+    const html = indexHtml.replace("</head>", `${injection}\n</head>`);
+    return res.status(200).send(html);
+  }
+  // fallback: send a minimal HTML if index not available
+  res
+    .status(200)
+    .send(
+      `<!doctype html><html><head>${injection}</head><body><div id="root"></div></body></html>`,
+    );
 });
 
 /* --- Start server --- */
