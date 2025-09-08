@@ -1,19 +1,38 @@
 {
-  "name": "parcel-react-client-starter",
+  "name": "format-poker",
   "private": true,
   "version": "0.0.0",
   "source": "src/index.html",
   "scripts": {
-    "start": "parcel",
-    "build": "parcel build"
+    "client:start": "parcel",
+    "client:build": "parcel build",
+    "build:server": "tsc -p tsconfig.server.json",
+    "start": "node dist/server.js",
+    "dev": "ts-node-dev --respawn --transpile-only server.ts",
+    "migrate": "psql \"$DATABASE_URL\" -f init_db.sql",
+    "seed": "psql \"$DATABASE_URL\" -f seed_db.sql"
   },
   "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "helmet": "^8.1.0",
+    "morgan": "^1.10.1",
+    "pg": "^8.16.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^4.17.23",
+    "@types/helmet": "^4.0.0",
+    "@types/morgan": "^1.9.10",
+    "@types/node": "^20.19.13",
+    "@types/pg": "^8.15.5",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "parcel": "^2.14.0"
+    "nodemon": "^3.1.10",
+    "parcel": "^2.14.0",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.9.2"
   }
 }

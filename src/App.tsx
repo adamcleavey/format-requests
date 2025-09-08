@@ -42,10 +42,27 @@ type Action =
   | { type: "addRow"; row: Row }
   | { type: "updateStatus"; id: string; status: string }
   | { type: "deleteRow"; id: string }
-  | { type: "voteToggle"; id: string };
+  | { type: "voteToggle"; id: string }
+  | { type: "setRows"; rows: Row[]; votes: string[] };
 
 // --- Configs ---
-const USE_API = false; // flip when wiring a backend
+const USE_API = true; // flip when wiring a backend
+// API base — prefer an environment-provided value, fall back to localhost in dev.
+// Avoid referencing `process` directly in client runtime code; instead, prefer
+// values exposed on `window` or via `import.meta.env` (Vite / modern bundlers).
+// The .replace ensures there is no trailing slash when building URLs.
+const API_BASE =
+  // First prefer an explicit global set by the hosting environment / HTML
+  (
+    (typeof window !== "undefined" && (window as any).__API_URL__) ||
+    // Next, prefer build-time envs exposed via import.meta.env (Vite, Snowpack, etc.)
+    (typeof import.meta !== "undefined" &&
+      (import.meta as any).env &&
+      ((import.meta as any).env.VITE_API_URL ||
+        (import.meta as any).env.REACT_APP_API_URL)) ||
+    // Finally, fall back to localhost for local dev
+    "http://localhost:3000"
+  ).replace(/\/$/, "");
 const ADMIN_KEY = "change-me";
 
 const init = (): State => {
@@ -101,6 +118,14 @@ function reducer(state: State, action: Action): State {
       setVotesSet(votes);
       return { ...state, rows, votes };
     }
+    case "setRows": {
+      // Replace rows and votes (votes array contains format ids the current device has voted for)
+      const votesSet = new Set(action.votes || []);
+      // Save the rows locally so offline usage still works
+      saveLocalRows(action.rows);
+      setVotesSet(votesSet);
+      return { ...state, rows: action.rows, votes: votesSet };
+    }
     default:
       return state;
   }
@@ -115,7 +140,25 @@ export default function App() {
   );
 
   useEffect(() => {
-    // placeholder for backend fetch when USE_API = true
+    // If using API, fetch authoritative rows from the server on mount.
+    // We still preserve local vote state (device votes) using local.js utilities.
+    if (!USE_API) return;
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/formats`);
+        if (!res.ok) {
+          console.warn("Failed to fetch formats from API:", res.status);
+          return;
+        }
+        const rows = await res.json();
+        // Keep local voted set (device-scoped) to determine if this device has voted
+        const votesSet = getVotesSet();
+        // Dispatch to replace rows and votes
+        dispatch({ type: "setRows", rows, votes: Array.from(votesSet) });
+      } catch (err) {
+        console.error("Error fetching formats:", err);
+      }
+    })();
   }, []);
 
   const filtered = useMemo(() => {
@@ -171,7 +214,31 @@ export default function App() {
     dispatch({ type: "toggleAdmin", value: nowOk });
   };
 
-  const onAdd = (name: string, kind: string, status: string) => {
+  const onAdd = async (name: string, kind: string, status: string) => {
+    if (USE_API) {
+      try {
+        const res = await fetch(`${API_BASE}/api/formats`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: name.trim(),
+            kind,
+            status,
+            adminKey: ADMIN_KEY,
+          }),
+        });
+        if (!res.ok) {
+          console.warn("Failed to add format via API:", res.status);
+          return;
+        }
+        const row = await res.json();
+        // Append returned row to local state (and persist locally)
+        dispatch({ type: "addRow", row });
+      } catch (err) {
+        console.error("Error adding format:", err);
+      }
+      return;
+    }
     const row: Row = {
       id: crypto.randomUUID(),
       name: name.trim(),
@@ -183,9 +250,56 @@ export default function App() {
     dispatch({ type: "addRow", row });
   };
 
-  const onSaveStatus = (id: string, status: string) =>
+  const onSaveStatus = async (id: string, status: string) => {
+    if (USE_API) {
+      try {
+        const res = await fetch(`${API_BASE}/api/formats/${id}/status`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status, adminKey: ADMIN_KEY }),
+        });
+        if (!res.ok) {
+          console.warn("Failed to update status via API:", res.status);
+          return;
+        }
+        const updated = await res.json();
+        // Update local rows to reflect updated status and persist
+        const rows = state.rows.map((r) => (r.id === id ? updated : r));
+        saveLocalRows(rows);
+        dispatch({ type: "setRows", rows, votes: Array.from(state.votes) });
+      } catch (err) {
+        console.error("Error updating status:", err);
+      }
+      return;
+    }
     dispatch({ type: "updateStatus", id, status });
-  const onDelete = (id: string) => dispatch({ type: "deleteRow", id });
+  };
+  const onDelete = async (id: string) => {
+    if (USE_API) {
+      try {
+        const res = await fetch(`${API_BASE}/api/formats/${id}`, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ adminKey: ADMIN_KEY }),
+        });
+        if (!res.ok) {
+          console.warn("Failed to delete via API:", res.status);
+          return;
+        }
+        // Remove locally
+        const rows = state.rows.filter((r) => r.id !== id);
+        const votes = new Set([...state.votes]);
+        votes.delete(id);
+        saveLocalRows(rows);
+        setVotesSet(votes);
+        dispatch({ type: "setRows", rows, votes: Array.from(votes) });
+      } catch (err) {
+        console.error("Error deleting format:", err);
+      }
+      return;
+    }
+    dispatch({ type: "deleteRow", id });
+  };
 
   return (
     <div className={styles.app}>
