@@ -10,7 +10,7 @@ export default function Header({ count, adminActive, onAdminActivate }) {
         <div className={styles.row}>
           <span className={styles.chip}>{count} formats</span>
           <span className={styles.chip}>
-            Click to upvote. One vote per device.
+            Click to upvote. One vote per format per device.
           </span>
           <span className={styles.admin}>
             Admin mode:

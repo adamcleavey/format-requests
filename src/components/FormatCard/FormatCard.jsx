@@ -17,6 +17,7 @@ export default function FormatCard({
   onDelete,
 }) {
   const [edit, setEdit] = useState(row.status);
+  const isRequestable = row.status === "Requested";
   return (
     <div className={styles.card}>
       <div className={styles.title}>
@@ -33,15 +34,20 @@ export default function FormatCard({
       </div>
 
       <div className={styles.actions}>
-        <button
-          className={`${styles.vote} ${voted ? styles.voted : ""}`}
-          aria-pressed={voted ? "true" : "false"}
-          title="Upvote this format"
-          onClick={onVote}
-        >
-          <span>▲</span>
-          <span className={styles.count}>{row.votes ?? 0}</span>
-        </button>
+        {isRequestable ? (
+          <button
+            className={`${styles.vote} ${voted ? styles.voted : ""}`}
+            aria-pressed={voted ? "true" : "false"}
+            title="Upvote this format"
+            onClick={onVote}
+          >
+            <span>▲</span>
+            <span className={styles.count}>{row.votes ?? 0}</span>
+          </button>
+        ) : (
+          ""
+        )}
+
         <span className={styles.pill}>{row.kind}</span>
 
         {admin && (

@@ -96,3 +96,8 @@
 .danger {
     color: #ffa8a8;
 }
+.locked {
+    color: var(--muted);
+    font-size: 12px;
+    padding: 6px 8px;
+}

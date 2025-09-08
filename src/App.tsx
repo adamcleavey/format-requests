@@ -152,6 +152,8 @@ export default function App() {
   }, [state]);
 
   const onVote = async (id: string) => {
+    const target = state.rows.find((r) => r.id === id);
+    if (!target || target.status !== "Requested") return; // block votes on Planned/Supported
     if (USE_API) {
       // POST/DELETE /api/formats/:id/vote {deviceId} -> {votes}
     }
