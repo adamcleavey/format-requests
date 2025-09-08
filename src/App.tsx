@@ -58,8 +58,7 @@ const API_BASE =
     // Next, prefer build-time envs exposed via import.meta.env (Vite, Snowpack, etc.)
     (typeof import.meta !== "undefined" &&
       (import.meta as any).env &&
-      ((import.meta as any).env.VITE_API_URL ||
-        (import.meta as any).env.REACT_APP_API_URL)) ||
+      (import.meta as any).env.RENDER_EXTERNAL_URL) ||
     // Finally, fall back to localhost for local dev
     "http://localhost:3000"
   ).replace(/\/$/, "");
