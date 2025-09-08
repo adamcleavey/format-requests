@@ -70,15 +70,6 @@ app.use(helmet());
 app.use(express.json());
 app.use(morgan(NODE_ENV === "production" ? "combined" : "dev"));
 
-// Serve static client files (built into dist/client)
-// This ensures the production server responds to "/" and serves the SPA.
-app.use(express.static(clientDist));
-
-// Fallback to index.html for client-side routing (SPA)
-app.get("*", (_req: Request, res: Response) => {
-  res.sendFile(path.join(clientDist, "index.html"));
-});
-
 /* --- Helpers --- */
 function sendError(res: Response, status = 500, error = "server_error") {
   return res.status(status).json({ error });
@@ -356,6 +347,15 @@ app.post("/api/formats/:id/vote", async (req: Request, res: Response) => {
 
 /* Healthcheck */
 app.get("/health", (_req: Request, res: Response) => res.json({ ok: true }));
+
+// Serve static client files (built into dist/client)
+// This ensures the production server responds to "/" and serves the SPA.
+app.use(express.static(clientDist));
+
+// Fallback to index.html for client-side routing (SPA)
+app.get("*", (_req: Request, res: Response) => {
+  res.sendFile(path.join(clientDist, "index.html"));
+});
 
 /* --- Start server --- */
 const server: Server = app.listen(PORT, () => {
