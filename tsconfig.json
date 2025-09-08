@@ -24,6 +24,15 @@
     "strict": true,
 
     /* Completeness */
-    "skipLibCheck": true
-  }
+    "skipLibCheck": true,
+
+    /* Allow importing JavaScript files (helps with .js/.jsx imports) */
+    "allowJs": true,
+
+    /* Ensure React types are available to the compiler */
+    "types": ["react"]
+  },
+
+  /* Ensure TypeScript includes the source tree (and src/global.d.ts) */
+  "include": ["src"]
 }

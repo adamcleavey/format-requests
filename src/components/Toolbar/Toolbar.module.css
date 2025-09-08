@@ -1,0 +1,17 @@
+.bar {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 16px;
+    display: grid;
+    grid-template-columns: 1fr 140px 160px 120px;
+    gap: 8px;
+    margin-top: 8px;
+}
+.input,
+.select {
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px;
+    border-radius: 8px;
+}

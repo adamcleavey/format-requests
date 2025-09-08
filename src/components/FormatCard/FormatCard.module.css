@@ -1,0 +1,98 @@
+.card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.title {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    align-items: flex-start;
+}
+.name {
+    font-weight: 600;
+}
+.meta {
+    color: var(--muted);
+    font-size: 12px;
+}
+.status {
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+}
+.supported {
+    background: rgba(46, 160, 67, 0.15);
+    color: #9be9a8;
+    border-color: rgba(46, 160, 67, 0.35);
+}
+.planned {
+    background: rgba(183, 129, 15, 0.16);
+    color: #ffd27b;
+    border-color: rgba(183, 129, 15, 0.35);
+}
+.requested {
+    background: rgba(47, 129, 247, 0.16);
+    color: #9ccaff;
+    border-color: rgba(47, 129, 247, 0.35);
+}
+.actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+.vote {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 10px;
+    border-radius: 10px;
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+}
+.voted {
+    background: rgba(47, 129, 247, 0.2);
+    border-color: rgba(47, 129, 247, 0.4);
+}
+.count {
+    min-width: 1.5ch;
+    text-align: right;
+}
+.pill {
+    background: var(--chip);
+    border: 1px solid var(--border);
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 12px;
+}
+.admin {
+    margin-left: auto;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+.select {
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 8px;
+    border-radius: 8px;
+}
+.btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 8px;
+    border-radius: 8px;
+}
+.danger {
+    color: #ffa8a8;
+}
