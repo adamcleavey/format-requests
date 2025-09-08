@@ -30,7 +30,7 @@
     "allowJs": true,
 
     /* Ensure React types are available to the compiler */
-    "types": ["react"]
+    "types": ["react", "node"]
   },
 
   /* Ensure TypeScript includes the source tree (and src/global.d.ts) */
