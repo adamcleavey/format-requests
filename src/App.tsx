@@ -48,12 +48,11 @@ type Action =
 // --- Configs ---
 const USE_API = true; // flip when wiring a backend
 // API base — hardcode dev and production origins
-const API_BASE = (
+const API_BASE =
   typeof window !== "undefined" &&
   ["localhost", "127.0.0.1"].includes(window.location.hostname)
-)
-  ? "http://localhost:3000"
-  : "https://format-requests.onrender.com";
+    ? "http://localhost:3000"
+    : "https://format-requests.onrender.com";
 const ADMIN_KEY = "change-me";
 
 const init = (): State => {
@@ -188,9 +187,61 @@ export default function App() {
   const onVote = async (id: string) => {
     const target = state.rows.find((r) => r.id === id);
     if (!target || target.status !== "Requested") return; // block votes on Planned/Supported
+
     if (USE_API) {
-      // POST/DELETE /api/formats/:id/vote {deviceId} -> {votes}
+      try {
+        const isCurrentlyVoted = state.votes.has(id);
+        const method = "POST";
+        const res = await fetch(`${API_BASE}/api/formats/${id}/vote`, {
+          method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ deviceId }),
+        });
+        if (!res.ok) {
+          console.warn("Failed to update vote via API:", res.status);
+          return;
+        }
+        const body = await res.json();
+
+        // The API is expected to return either { votes: number } or the updated row.
+        let updatedRows: Row[] = state.rows;
+        if (typeof body.votes === "number") {
+          // Update only the votes count for the target row
+          updatedRows = state.rows.map((r) =>
+            r.id === id ? { ...r, votes: body.votes } : r,
+          );
+        } else if (body && body.id) {
+          // API returned the full updated row
+          updatedRows = state.rows.map((r) => (r.id === id ? body : r));
+        } else {
+          // Fallback: toggle locally like existing behavior (shouldn't normally happen)
+          updatedRows = state.rows.map((r) =>
+            r.id === id
+              ? { ...r, votes: r.votes + (isCurrentlyVoted ? -1 : 1) }
+              : r,
+          );
+        }
+
+        // Update device-local vote set to reflect this device's vote
+        const votesSet = new Set(state.votes);
+        if (isCurrentlyVoted) votesSet.delete(id);
+        else votesSet.add(id);
+
+        // Persist and update state
+        saveLocalRows(updatedRows);
+        setVotesSet(votesSet);
+        dispatch({
+          type: "setRows",
+          rows: updatedRows,
+          votes: Array.from(votesSet),
+        });
+      } catch (err) {
+        console.error("Error updating vote:", err);
+      }
+      return;
     }
+
+    // Offline/local-only flow
     dispatch({ type: "voteToggle", id });
   };
 
