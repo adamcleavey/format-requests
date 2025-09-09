@@ -198,6 +198,23 @@ app.delete("/api/formats/:id", requireAdmin, async (req, res) => {
   }
 });
 
+// GET /api/votes/:deviceId
+// Returns an array of format IDs this device has voted for.
+app.get("/api/votes/:deviceId", async (req, res) => {
+  const deviceId = req.params.deviceId;
+  if (!deviceId) return res.status(400).json({ error: "missing_deviceId" });
+  try {
+    const { rows } = await pool.query(
+      "SELECT format_id FROM votes WHERE device_id = $1",
+      [deviceId]
+    );
+    res.json(rows.map((r) => r.format_id));
+  } catch (err) {
+    console.error("GET /api/votes/:deviceId error:", err);
+    res.status(500).json({ error: "db_error" });
+  }
+});
+
 // POST /api/formats/:id/vote
 // body: { deviceId: "<uuid-or-string>" }
 // Toggles vote: if not voted, insert and increment, else remove and decrement.

@@ -290,6 +290,25 @@ app.delete(
 );
 
 /**
+ * GET /api/votes/:deviceId
+ * Returns an array of format IDs that the given device has voted for.
+ */
+app.get("/api/votes/:deviceId", async (req: Request, res: Response) => {
+  const deviceId = req.params.deviceId;
+  if (!deviceId) return sendError(res, 400, "missing_deviceId");
+  try {
+    const { rows } = await pool.query<{ format_id: string }>(
+      "SELECT format_id FROM votes WHERE device_id = $1",
+      [deviceId],
+    );
+    return res.json(rows.map((r) => r.format_id));
+  } catch (err) {
+    console.error("GET /api/votes/:deviceId error:", err);
+    return sendError(res, 500, "db_error");
+  }
+});
+
+/**
  * POST /api/formats/:id/vote
  * body: { deviceId: string }
  * toggles vote (insert/delete) and returns { voted, votes }
