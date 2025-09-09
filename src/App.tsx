@@ -43,6 +43,7 @@ type Action =
   | { type: "updateStatus"; id: string; status: string }
   | { type: "deleteRow"; id: string }
   | { type: "voteToggle"; id: string }
+  | { type: "voteUpdate"; id: string; votes: number }
   | { type: "setRows"; rows: Row[]; votes: string[] };
 
 // --- Configs ---
@@ -108,6 +109,13 @@ function reducer(state: State, action: Action): State {
       setVotesSet(votes);
       return { ...state, rows, votes };
     }
+    case "voteUpdate": {
+      const rows = state.rows.map((r) =>
+        r.id === action.id ? { ...r, votes: action.votes } : r,
+      );
+      saveLocalRows(rows);
+      return { ...state, rows };
+    }
     case "setRows": {
       // Replace rows and votes (votes array contains format ids the current device has voted for)
       const votesSet = new Set(action.votes || []);
@@ -157,6 +165,22 @@ export default function App() {
         console.error("Error fetching formats:", err);
       }
     })();
+  }, []);
+
+  useEffect(() => {
+    if (!USE_API) return;
+    const es = new EventSource(`${API_BASE}/api/live`);
+    es.onmessage = (e: MessageEvent) => {
+      try {
+        const data = JSON.parse(e.data);
+        if (data && typeof data.id === "string" && typeof data.votes === "number") {
+          dispatch({ type: "voteUpdate", id: data.id, votes: data.votes });
+        }
+      } catch (err) {
+        console.error("SSE parse error:", err);
+      }
+    };
+    return () => es.close();
   }, []);
 
   const filtered = useMemo(() => {
