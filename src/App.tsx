@@ -47,21 +47,13 @@ type Action =
 
 // --- Configs ---
 const USE_API = true; // flip when wiring a backend
-// API base — prefer an environment-provided value, fall back to localhost in dev.
-// Avoid referencing `process` directly in client runtime code; instead, prefer
-// values exposed on `window` or via `import.meta.env` (Vite / modern bundlers).
-// The .replace ensures there is no trailing slash when building URLs.
-const API_BASE =
-  // First prefer an explicit global set by the hosting environment / HTML
-  (
-    (typeof window !== "undefined" && (window as any).__API_URL__) ||
-    // Next, prefer build-time envs exposed via import.meta.env (Vite, Snowpack, etc.)
-    (typeof import.meta !== "undefined" &&
-      (import.meta as any).env &&
-      (import.meta as any).env.RENDER_EXTERNAL_URL) ||
-    // Finally, fall back to localhost for local dev
-    "http://localhost:3000"
-  ).replace(/\/$/, "");
+// API base — hardcode dev and production origins
+const API_BASE = (
+  typeof window !== "undefined" &&
+  ["localhost", "127.0.0.1"].includes(window.location.hostname)
+)
+  ? "http://localhost:3000"
+  : "https://format-requests.onrender.com";
 const ADMIN_KEY = "change-me";
 
 const init = (): State => {
