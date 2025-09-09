@@ -101,6 +101,43 @@ function requireAdmin(req: Request, _res: Response, next: NextFunction) {
 
 /* --- Routes --- */
 
+/* --- Server Sent Events for live vote updates --- */
+const sseClients: Set<Response> = new Set();
+
+app.get("/api/live", (req: Request, res: Response) => {
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.flushHeaders();
+  res.write("\n");
+  sseClients.add(res);
+  req.on("close", () => {
+    sseClients.delete(res);
+  });
+});
+
+function broadcastVote(id: string, votes: number) {
+  const payload = `data: ${JSON.stringify({ id, votes })}\n\n`;
+  for (const client of Array.from(sseClients)) {
+    try {
+      client.write(payload);
+    } catch {
+      sseClients.delete(client);
+    }
+  }
+}
+
+// Heartbeat to keep connections alive
+setInterval(() => {
+  for (const client of Array.from(sseClients)) {
+    try {
+      client.write(":ping\n\n");
+    } catch {
+      sseClients.delete(client);
+    }
+  }
+}, 30000);
+
 /**
  * GET /api/formats
  * Query params:
@@ -357,6 +394,7 @@ app.post("/api/formats/:id/vote", async (req: Request, res: Response) => {
     );
     await client.query("COMMIT");
     const votes = vres.rows[0] ? Number(vres.rows[0].votes || 0) : 0;
+    broadcastVote(id, votes);
     return res.json({ voted, votes });
   } catch (err) {
     if (client) {
