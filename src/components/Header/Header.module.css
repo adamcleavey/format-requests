@@ -59,3 +59,12 @@
     padding: 6px 8px;
     border-radius: 8px;
 }
+
+.gear {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px;
+}
