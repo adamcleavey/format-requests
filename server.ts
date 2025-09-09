@@ -363,19 +363,14 @@ app.use(express.static(clientDist));
 
 // Fallback to index.html for client-side routing (SPA)
 app.get("*", (_req: Request, res: Response) => {
-  const apiUrl = process.env.RENDER_EXTERNAL_URL || "";
-  // use JSON.stringify to safely escape the string
-  const injection = `<script>window.__API_URL__ = ${JSON.stringify(apiUrl)};</script>`;
   if (indexHtml) {
-    // insert injection right before the closing </head> (if present)
-    const html = indexHtml.replace("</head>", `${injection}\n</head>`);
-    return res.status(200).send(html);
+    return res.status(200).send(indexHtml);
   }
   // fallback: send a minimal HTML if index not available
   res
     .status(200)
     .send(
-      `<!doctype html><html><head>${injection}</head><body><div id="root"></div></body></html>`,
+      "<!doctype html><html><head></head><body><div id=\"root\"></div></body></html>",
     );
 });
 
