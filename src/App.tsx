@@ -131,18 +131,26 @@ export default function App() {
 
   useEffect(() => {
     // If using API, fetch authoritative rows from the server on mount.
-    // We still preserve local vote state (device votes) using local.js utilities.
     if (!USE_API) return;
     (async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/formats`);
-        if (!res.ok) {
-          console.warn("Failed to fetch formats from API:", res.status);
+        const [rowsRes, votesRes] = await Promise.all([
+          fetch(`${API_BASE}/api/formats`),
+          fetch(`${API_BASE}/api/votes/${deviceId}`),
+        ]);
+        if (!rowsRes.ok) {
+          console.warn("Failed to fetch formats from API:", rowsRes.status);
           return;
         }
-        const rows = await res.json();
-        // Keep local voted set (device-scoped) to determine if this device has voted
-        const votesSet = getVotesSet();
+        const rows = await rowsRes.json();
+        let votes: string[] = [];
+        if (votesRes.ok) {
+          votes = await votesRes.json();
+        } else {
+          // Fallback to local votes if server request fails
+          votes = Array.from(getVotesSet());
+        }
+        const votesSet = new Set(votes);
         // Dispatch to replace rows and votes
         dispatch({ type: "setRows", rows, votes: Array.from(votesSet) });
       } catch (err) {
@@ -203,29 +211,21 @@ export default function App() {
         }
         const body = await res.json();
 
-        // The API is expected to return either { votes: number } or the updated row.
+        // Determine updated vote count and whether the device has voted
         let updatedRows: Row[] = state.rows;
         if (typeof body.votes === "number") {
-          // Update only the votes count for the target row
           updatedRows = state.rows.map((r) =>
             r.id === id ? { ...r, votes: body.votes } : r,
           );
         } else if (body && body.id) {
-          // API returned the full updated row
           updatedRows = state.rows.map((r) => (r.id === id ? body : r));
-        } else {
-          // Fallback: toggle locally like existing behavior (shouldn't normally happen)
-          updatedRows = state.rows.map((r) =>
-            r.id === id
-              ? { ...r, votes: r.votes + (isCurrentlyVoted ? -1 : 1) }
-              : r,
-          );
         }
 
-        // Update device-local vote set to reflect this device's vote
+        const voted =
+          typeof body.voted === "boolean" ? body.voted : !isCurrentlyVoted;
         const votesSet = new Set(state.votes);
-        if (isCurrentlyVoted) votesSet.delete(id);
-        else votesSet.add(id);
+        if (voted) votesSet.add(id);
+        else votesSet.delete(id);
 
         // Persist and update state
         saveLocalRows(updatedRows);
