@@ -1,4 +1,11 @@
-import React, { useEffect, useMemo, useReducer } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 import Header from "./components/Header/Header.jsx";
 import Toolbar from "./components/Toolbar/Toolbar.jsx";
 import AdminBar from "./components/AdminBar/AdminBar.jsx";
@@ -136,6 +143,28 @@ export default function App() {
     undefined,
     init,
   );
+  const [reflowPending, setReflowPending] = useState(false);
+  const reflowTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastOrderRef = useRef<string[]>([]);
+
+  const scheduleReflow = useCallback(() => {
+    setReflowPending(true);
+    if (reflowTimerRef.current) {
+      clearTimeout(reflowTimerRef.current);
+    }
+    reflowTimerRef.current = setTimeout(() => {
+      reflowTimerRef.current = null;
+      setReflowPending(false);
+    }, 5000);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (reflowTimerRef.current) {
+        clearTimeout(reflowTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     // If using API, fetch authoritative rows from the server on mount.
@@ -185,36 +214,69 @@ export default function App() {
 
   const filtered = useMemo(() => {
     const q = state.query.trim().toLowerCase();
-    let list: Row[] = state.rows.filter(
+    const filteredRows: Row[] = state.rows.filter(
       (r) =>
         (!q || r.name.toLowerCase().includes(q)) &&
         (!state.kind || r.kind === state.kind) &&
         (!state.status || r.status === state.status),
     );
-    switch (state.sort) {
-      case "votes-desc":
-        list.sort((a, b) => Number(b.votes) - Number(a.votes));
-        break;
-      case "votes-asc":
-        list.sort((a, b) => Number(a.votes) - Number(b.votes));
-        break;
-      case "name-asc":
-        list.sort((a, b) => a.name.localeCompare(b.name));
-        break;
-      case "name-desc":
-        list.sort((a, b) => b.name.localeCompare(a.name));
-        break;
-      case "newest":
-        list.sort(
-          (a, b) =>
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-        );
-        break;
-      default:
-        break;
+
+    const sortKey = state.sort;
+    const sortedRows: Row[] = [...filteredRows];
+    const applySort = () => {
+      switch (sortKey) {
+        case "votes-desc":
+          sortedRows.sort((a, b) => Number(b.votes) - Number(a.votes));
+          break;
+        case "votes-asc":
+          sortedRows.sort((a, b) => Number(a.votes) - Number(b.votes));
+          break;
+        case "name-asc":
+          sortedRows.sort((a, b) => a.name.localeCompare(b.name));
+          break;
+        case "name-desc":
+          sortedRows.sort((a, b) => b.name.localeCompare(a.name));
+          break;
+        case "newest":
+          sortedRows.sort(
+            (a, b) =>
+              new Date(b.created_at).getTime() -
+              new Date(a.created_at).getTime(),
+          );
+          break;
+        default:
+          break;
+      }
+    };
+
+    const isVotesSort = sortKey === "votes-desc" || sortKey === "votes-asc";
+    if (isVotesSort && reflowPending) {
+      if (!lastOrderRef.current.length) {
+        applySort();
+        lastOrderRef.current = sortedRows.map((r) => r.id);
+        return sortedRows;
+      }
+
+      const orderMap = new Map<string, number>();
+      lastOrderRef.current.forEach((id, index) => {
+        orderMap.set(id, index);
+      });
+
+      sortedRows.sort((a, b) => {
+        const idxA = orderMap.get(a.id);
+        const idxB = orderMap.get(b.id);
+        if (idxA === undefined && idxB === undefined) return 0;
+        if (idxA === undefined) return 1;
+        if (idxB === undefined) return -1;
+        return idxA - idxB;
+      });
+      return sortedRows;
     }
-    return list;
-  }, [state]);
+
+    applySort();
+    lastOrderRef.current = sortedRows.map((r) => r.id);
+    return sortedRows;
+  }, [state, reflowPending]);
 
   const onVote = async (id: string) => {
     const target = state.rows.find((r) => r.id === id);
@@ -259,6 +321,7 @@ export default function App() {
           rows: updatedRows,
           votes: Array.from(votesSet),
         });
+        scheduleReflow();
       } catch (err) {
         console.error("Error updating vote:", err);
       }
@@ -267,6 +330,7 @@ export default function App() {
 
     // Offline/local-only flow
     dispatch({ type: "voteToggle", id });
+    scheduleReflow();
   };
 
   const onAdminActivate = (key: string) => {
