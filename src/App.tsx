@@ -195,6 +195,45 @@ export default function App() {
     return () => es.close();
   }, []);
 
+  const onAdminActivate = useCallback(
+    async (key: string) => {
+      if (!USE_API) {
+        const ok = key === ADMIN_KEY;
+        if (ok) setStoredAdminKey(key);
+        else setStoredAdminKey(null);
+        dispatch({ type: "toggleAdmin", value: ok });
+        return;
+      }
+
+      const trimmed = key.trim();
+      if (!trimmed) {
+        setStoredAdminKey(null);
+        dispatch({ type: "toggleAdmin", value: false });
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/api/admin/verify`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ adminKey: trimmed }),
+        });
+        if (res.ok) {
+          setStoredAdminKey(trimmed);
+          dispatch({ type: "toggleAdmin", value: true });
+        } else {
+          setStoredAdminKey(null);
+          dispatch({ type: "toggleAdmin", value: false });
+        }
+      } catch (err) {
+        console.error("Error verifying admin key:", err);
+        setStoredAdminKey(null);
+        dispatch({ type: "toggleAdmin", value: false });
+      }
+    },
+    [dispatch],
+  );
+
   useEffect(() => {
     if (!USE_API) return;
     const storedKey = getStoredAdminKey();
@@ -288,45 +327,6 @@ export default function App() {
     // Offline/local-only flow
     dispatch({ type: "voteToggle", id });
   };
-
-  const onAdminActivate = useCallback(
-    async (key: string) => {
-      if (!USE_API) {
-        const ok = key === ADMIN_KEY;
-        if (ok) setStoredAdminKey(key);
-        else setStoredAdminKey(null);
-        dispatch({ type: "toggleAdmin", value: ok });
-        return;
-      }
-
-      const trimmed = key.trim();
-      if (!trimmed) {
-        setStoredAdminKey(null);
-        dispatch({ type: "toggleAdmin", value: false });
-        return;
-      }
-
-      try {
-        const res = await fetch(`${API_BASE}/api/admin/verify`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ adminKey: trimmed }),
-        });
-        if (res.ok) {
-          setStoredAdminKey(trimmed);
-          dispatch({ type: "toggleAdmin", value: true });
-        } else {
-          setStoredAdminKey(null);
-          dispatch({ type: "toggleAdmin", value: false });
-        }
-      } catch (err) {
-        console.error("Error verifying admin key:", err);
-        setStoredAdminKey(null);
-        dispatch({ type: "toggleAdmin", value: false });
-      }
-    },
-    [dispatch],
-  );
 
   const onAdd = async (name: string, kind: string, status: string) => {
     if (USE_API) {
