@@ -84,17 +84,17 @@ function sendError(res: Response, status = 500, error = "server_error") {
   return res.status(status).json({ error });
 }
 
-function requireAdmin(req: Request, _res: Response, next: NextFunction) {
-  // Accept admin key via header `x-admin-key`, body.adminKey, or query.adminKey
+function extractAdminKey(req: Request): string | undefined {
   const headerKey = req.get("x-admin-key");
   const bodyKey = (req.body && (req.body as any).adminKey) || undefined;
   const queryKey = (req.query && (req.query as any).adminKey) || undefined;
-  const key = headerKey || bodyKey || queryKey;
+  return headerKey || bodyKey || queryKey;
+}
+
+function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  const key = extractAdminKey(req);
   if (!key || String(key) !== ADMIN_KEY) {
-    // send unauthorized via res if used directly, but as middleware, call next with error
-    return (req.res || ({} as Response))
-      .status(401)
-      .json({ error: "unauthorized" });
+    return res.status(401).json({ error: "unauthorized" });
   }
   return next();
 }
@@ -209,6 +209,14 @@ app.get("/api/formats", async (req: Request, res: Response) => {
 });
 
 /**
+ * POST /api/admin/verify (admin)
+ * Allows the client to validate an admin key without performing any action.
+ */
+app.post("/api/admin/verify", requireAdmin, (_req: Request, res: Response) => {
+  return res.json({ ok: true });
+});
+
+/**
  * GET /api/formats/:id
  */
 app.get("/api/formats/:id", async (req: Request, res: Response) => {
@@ -231,17 +239,7 @@ app.get("/api/formats/:id", async (req: Request, res: Response) => {
  */
 app.post(
   "/api/formats",
-  (req: Request, res: Response, next: NextFunction) => {
-    // wrap requireAdmin to ensure we can return a response if unauthorized
-    const headerKey = req.get("x-admin-key");
-    const bodyKey = (req.body && (req.body as any).adminKey) || undefined;
-    const queryKey = (req.query && (req.query as any).adminKey) || undefined;
-    const key = headerKey || bodyKey || queryKey;
-    if (!key || String(key) !== ADMIN_KEY) {
-      return res.status(401).json({ error: "unauthorized" });
-    }
-    return next();
-  },
+  requireAdmin,
   async (req: Request, res: Response) => {
     const name = typeof req.body?.name === "string" ? req.body.name.trim() : "";
     const kind = typeof req.body?.kind === "string" ? req.body.kind.trim() : "";
@@ -268,16 +266,7 @@ app.post(
  */
 app.put(
   "/api/formats/:id/status",
-  (req: Request, res: Response, next: NextFunction) => {
-    const headerKey = req.get("x-admin-key");
-    const bodyKey = (req.body && (req.body as any).adminKey) || undefined;
-    const queryKey = (req.query && (req.query as any).adminKey) || undefined;
-    const key = headerKey || bodyKey || queryKey;
-    if (!key || String(key) !== ADMIN_KEY) {
-      return res.status(401).json({ error: "unauthorized" });
-    }
-    return next();
-  },
+  requireAdmin,
   async (req: Request, res: Response) => {
     const id = req.params.id;
     const status =
@@ -303,16 +292,7 @@ app.put(
  */
 app.delete(
   "/api/formats/:id",
-  (req: Request, res: Response, next: NextFunction) => {
-    const headerKey = req.get("x-admin-key");
-    const bodyKey = (req.body && (req.body as any).adminKey) || undefined;
-    const queryKey = (req.query && (req.query as any).adminKey) || undefined;
-    const key = headerKey || bodyKey || queryKey;
-    if (!key || String(key) !== ADMIN_KEY) {
-      return res.status(401).json({ error: "unauthorized" });
-    }
-    return next();
-  },
+  requireAdmin,
   async (req: Request, res: Response) => {
     const id = req.params.id;
     try {
