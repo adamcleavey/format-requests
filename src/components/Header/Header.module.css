@@ -44,6 +44,11 @@
     align-items: center;
     gap: 8px;
 }
+.form {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
 .input {
     background: var(--card);
     border: 1px solid var(--border);
@@ -59,6 +64,17 @@
     padding: 6px 8px;
     border-radius: 8px;
 }
+.cancel {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    padding: 6px 8px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+.cancel:hover {
+    color: var(--text);
+}
 
 .gear {
     background: transparent;
@@ -67,4 +83,26 @@
     cursor: pointer;
     font-size: 16px;
     padding: 4px;
+}
+.gear:hover,
+.gear:focus-visible {
+    color: var(--text);
+}
+.status {
+    color: var(--text);
+    background: var(--chip);
+    border: 1px solid var(--border);
+    padding: 4px 8px;
+    border-radius: 999px;
+}
+.srOnly {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
 }
