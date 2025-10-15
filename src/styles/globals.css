@@ -1,18 +1,20 @@
 * {
     box-sizing: border-box;
 }
+
 body {
     margin: 0;
-    font:
-        14px/1.4 system-ui,
-        Segoe UI,
-        Roboto,
-        Helvetica,
-        Arial;
+    font: 15px/1.5 "Helvetica Neue", Helvetica, Arial, sans-serif;
+    background: #f7f3ef;
+    color: #1f1d1a;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
 }
+
 button {
     cursor: pointer;
 }
+
 input,
 select,
 button {
