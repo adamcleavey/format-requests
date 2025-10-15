@@ -62,6 +62,18 @@ const API_BASE =
     ? "http://localhost:3000"
     : "https://format-requests.onrender.com";
 const ADMIN_KEY = "change-me";
+const ADMIN_STORAGE_KEY = "adminToken";
+
+const getStoredAdminKey = (): string => {
+  if (typeof window === "undefined") return "";
+  return sessionStorage.getItem(ADMIN_STORAGE_KEY) || "";
+};
+
+const setStoredAdminKey = (value: string | null) => {
+  if (typeof window === "undefined") return;
+  if (value) sessionStorage.setItem(ADMIN_STORAGE_KEY, value);
+  else sessionStorage.removeItem(ADMIN_STORAGE_KEY);
+};
 
 const init = (): State => {
   const rows = loadLocalRows(seed);
@@ -212,6 +224,53 @@ export default function App() {
     return () => es.close();
   }, []);
 
+  const onAdminActivate = useCallback(
+    async (key: string) => {
+      if (!USE_API) {
+        const ok = key === ADMIN_KEY;
+        if (ok) setStoredAdminKey(key);
+        else setStoredAdminKey(null);
+        dispatch({ type: "toggleAdmin", value: ok });
+        return;
+      }
+
+      const trimmed = key.trim();
+      if (!trimmed) {
+        setStoredAdminKey(null);
+        dispatch({ type: "toggleAdmin", value: false });
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/api/admin/verify`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ adminKey: trimmed }),
+        });
+        if (res.ok) {
+          setStoredAdminKey(trimmed);
+          dispatch({ type: "toggleAdmin", value: true });
+        } else {
+          setStoredAdminKey(null);
+          dispatch({ type: "toggleAdmin", value: false });
+        }
+      } catch (err) {
+        console.error("Error verifying admin key:", err);
+        setStoredAdminKey(null);
+        dispatch({ type: "toggleAdmin", value: false });
+      }
+    },
+    [dispatch],
+  );
+
+  useEffect(() => {
+    if (!USE_API) return;
+    const storedKey = getStoredAdminKey();
+    if (storedKey) {
+      void onAdminActivate(storedKey);
+    }
+  }, [onAdminActivate]);
+
   const filtered = useMemo(() => {
     const q = state.query.trim().toLowerCase();
     const filteredRows: Row[] = state.rows.filter(
@@ -333,20 +392,14 @@ export default function App() {
     scheduleReflow();
   };
 
-  const onAdminActivate = (key: string) => {
-    const ok = USE_API
-      ? Boolean(sessionStorage.getItem("adminToken"))
-      : key === ADMIN_KEY;
-    if (!ok && USE_API && key) sessionStorage.setItem("adminToken", key);
-    const nowOk = USE_API
-      ? Boolean(sessionStorage.getItem("adminToken"))
-      : key === ADMIN_KEY;
-    dispatch({ type: "toggleAdmin", value: nowOk });
-  };
-
   const onAdd = async (name: string, kind: string, status: string) => {
     if (USE_API) {
       try {
+        const adminKey = getStoredAdminKey();
+        if (!adminKey) {
+          console.warn("Cannot add format: missing admin key");
+          return;
+        }
         const res = await fetch(`${API_BASE}/api/formats`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -354,7 +407,7 @@ export default function App() {
             name: name.trim(),
             kind,
             status,
-            adminKey: ADMIN_KEY,
+            adminKey,
           }),
         });
         if (!res.ok) {
@@ -383,10 +436,15 @@ export default function App() {
   const onSaveStatus = async (id: string, status: string) => {
     if (USE_API) {
       try {
+        const adminKey = getStoredAdminKey();
+        if (!adminKey) {
+          console.warn("Cannot update status: missing admin key");
+          return;
+        }
         const res = await fetch(`${API_BASE}/api/formats/${id}/status`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status, adminKey: ADMIN_KEY }),
+          body: JSON.stringify({ status, adminKey }),
         });
         if (!res.ok) {
           console.warn("Failed to update status via API:", res.status);
@@ -407,10 +465,15 @@ export default function App() {
   const onDelete = async (id: string) => {
     if (USE_API) {
       try {
+        const adminKey = getStoredAdminKey();
+        if (!adminKey) {
+          console.warn("Cannot delete format: missing admin key");
+          return;
+        }
         const res = await fetch(`${API_BASE}/api/formats/${id}`, {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ adminKey: ADMIN_KEY }),
+          body: JSON.stringify({ adminKey }),
         });
         if (!res.ok) {
           console.warn("Failed to delete via API:", res.status);
