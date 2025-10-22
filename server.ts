@@ -6,6 +6,8 @@ import { Pool, PoolClient } from "pg";
 import { Server } from "http";
 import path from "path";
 import fs from "fs";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
 
 /**
  * server.ts
@@ -63,7 +65,8 @@ const pool = new Pool({
 
 /* --- App setup --- */
 const app = express();
-
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 const clientDist = path.join(__dirname, "client");
 
 let indexHtml = "";
@@ -237,29 +240,25 @@ app.get("/api/formats/:id", async (req: Request, res: Response) => {
 /**
  * POST /api/formats (admin)
  */
-app.post(
-  "/api/formats",
-  requireAdmin,
-  async (req: Request, res: Response) => {
-    const name = typeof req.body?.name === "string" ? req.body.name.trim() : "";
-    const kind = typeof req.body?.kind === "string" ? req.body.kind.trim() : "";
-    const status =
-      typeof req.body?.status === "string" ? req.body.status.trim() : "";
+app.post("/api/formats", requireAdmin, async (req: Request, res: Response) => {
+  const name = typeof req.body?.name === "string" ? req.body.name.trim() : "";
+  const kind = typeof req.body?.kind === "string" ? req.body.kind.trim() : "";
+  const status =
+    typeof req.body?.status === "string" ? req.body.status.trim() : "";
 
-    if (!name || !kind || !status) return sendError(res, 400, "missing_fields");
+  if (!name || !kind || !status) return sendError(res, 400, "missing_fields");
 
-    try {
-      const { rows } = await pool.query<FormatRow>(
-        "INSERT INTO formats (name, kind, status) VALUES ($1, $2, $3) RETURNING id, name, kind, status, created_at, votes",
-        [name, kind, status],
-      );
-      return res.status(201).json(rows[0]);
-    } catch (err) {
-      console.error("POST /api/formats error:", err);
-      return sendError(res, 500, "db_error");
-    }
-  },
-);
+  try {
+    const { rows } = await pool.query<FormatRow>(
+      "INSERT INTO formats (name, kind, status) VALUES ($1, $2, $3) RETURNING id, name, kind, status, created_at, votes",
+      [name, kind, status],
+    );
+    return res.status(201).json(rows[0]);
+  } catch (err) {
+    console.error("POST /api/formats error:", err);
+    return sendError(res, 500, "db_error");
+  }
+});
 
 /**
  * PUT /api/formats/:id/status (admin)
@@ -407,7 +406,7 @@ app.get("*", (_req: Request, res: Response) => {
   res
     .status(200)
     .send(
-      "<!doctype html><html><head></head><body><div id=\"root\"></div></body></html>",
+      '<!doctype html><html><head></head><body><div id="root"></div></body></html>',
     );
 });
 
