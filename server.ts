@@ -65,8 +65,7 @@ const pool = new Pool({
 
 /* --- App setup --- */
 const app = express();
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const __dirname = process.cwd();
 const clientDist = path.join(__dirname, "dist/client");
 
 let indexHtml = "";
