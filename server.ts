@@ -65,8 +65,8 @@ const pool = new Pool({
 
 /* --- App setup --- */
 const app = express();
-const __dirname = process.cwd();
-const clientDist = path.join(__dirname, "dist/client");
+//const __dirname = process.cwd();
+const clientDist = path.join(__dirname, "client");
 
 let indexHtml = "";
 try {
