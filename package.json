@@ -6,9 +6,9 @@
   "scripts": {
     "client:start": "parcel",
     "client:build": "parcel build --dist-dir dist/client",
-    "build:server": "tsc -p tsconfig.server.json",
+    "build:server": "tsc -p tsconfig.server.json && mv dist/server.js dist/server.cjs",
     "build": "npm run client:build && npm run build:server",
-    "start": "node dist/server.js",
+    "start": "node dist/server.cjs",
     "dev": "ts-node-dev --respawn --transpile-only server.ts",
     "migrate": "psql \"$DATABASE_URL\" -f init_db.sql",
     "seed": "psql \"$DATABASE_URL\" -f seed_db.sql"

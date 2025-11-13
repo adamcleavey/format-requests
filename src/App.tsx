@@ -10,7 +10,7 @@ import Header from "./components/Header/Header.jsx";
 import Toolbar from "./components/Toolbar/Toolbar.jsx";
 import AdminBar from "./components/AdminBar/AdminBar.jsx";
 import FormatCard from "./components/FormatCard/FormatCard.jsx";
-import styles from "./App.module.css";
+import * as style from "./App.module.css";
 import { seed } from "./data/seed";
 import {
   loadLocalRows,
@@ -158,6 +158,7 @@ export default function App() {
   const [reflowPending, setReflowPending] = useState(false);
   const reflowTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastOrderRef = useRef<string[]>([]);
+  const css = style as Record<string, string>;
 
   const scheduleReflow = useCallback(() => {
     setReflowPending(true);
@@ -214,7 +215,11 @@ export default function App() {
     es.onmessage = (e: MessageEvent) => {
       try {
         const data = JSON.parse(e.data);
-        if (data && typeof data.id === "string" && typeof data.votes === "number") {
+        if (
+          data &&
+          typeof data.id === "string" &&
+          typeof data.votes === "number"
+        ) {
           dispatch({ type: "voteUpdate", id: data.id, votes: data.votes });
         }
       } catch (err) {
@@ -495,7 +500,7 @@ export default function App() {
   };
 
   return (
-    <div className={styles.app}>
+    <div className={css.app}>
       <Header
         count={filtered.length}
         adminActive={state.admin}
@@ -511,8 +516,8 @@ export default function App() {
         ) => dispatch({ type: "setFilter", payload })}
       />
       <AdminBar visible={state.admin} onAdd={onAdd} />
-      <main className={styles.gridWrap}>
-        <div className={styles.grid}>
+      <main className={css.gridWrap}>
+        <div className={css.grid}>
           {filtered.map((r) => (
             <FormatCard
               key={r.id}

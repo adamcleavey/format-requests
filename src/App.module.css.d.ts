@@ -1,8 +1,8 @@
-declare const styles: {
+declare const style: {
   readonly app: string;
   readonly gridWrap: string;
   readonly grid: string;
   readonly footer: string;
   readonly [className: string]: string;
 };
-export default styles;
+export default style;
