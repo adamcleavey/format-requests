@@ -67,7 +67,7 @@ const pool = new Pool({
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const clientDist = path.join(__dirname, "client");
+const clientDist = path.join(__dirname, "dist/client");
 
 let indexHtml = "";
 try {
@@ -398,7 +398,7 @@ app.get("/health", (_req: Request, res: Response) => res.json({ ok: true }));
 app.use(express.static(clientDist));
 
 // Fallback to index.html for client-side routing (SPA)
-app.get("*", (_req: Request, res: Response) => {
+app.get("*path", (_req: Request, res: Response) => {
   if (indexHtml) {
     return res.status(200).send(indexHtml);
   }
