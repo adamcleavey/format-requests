@@ -6,8 +6,6 @@ import { Pool, PoolClient } from "pg";
 import { Server } from "http";
 import path from "path";
 import fs from "fs";
-import { fileURLToPath } from "url";
-import { dirname } from "path";
 
 /**
  * server.ts
@@ -65,8 +63,11 @@ const pool = new Pool({
 
 /* --- App setup --- */
 const app = express();
-//const __dirname = process.cwd();
-const clientDist = path.join(__dirname, "client");
+const serverDir =
+  typeof __dirname !== "undefined"
+    ? __dirname
+    : path.join(process.cwd(), "dist"); // ts-node (ESM) fallback
+const clientDist = path.join(serverDir, "client");
 
 let indexHtml = "";
 try {
