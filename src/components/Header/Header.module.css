@@ -2,7 +2,12 @@
     position: sticky;
     top: 0;
     z-index: 2;
-    background: linear-gradient(180deg, rgba(247, 243, 239, 0.96), rgba(247, 243, 239, 0.85) 70%, transparent);
+    background: linear-gradient(
+        180deg,
+        rgba(247, 243, 239, 0.96),
+        rgba(247, 243, 239, 0.85) 70%,
+        transparent
+    );
     backdrop-filter: blur(8px);
     padding: 20px 16px 12px;
     border-bottom: 1px solid var(--border);
@@ -92,8 +97,8 @@
     border: none;
     color: var(--muted);
     cursor: pointer;
-    font-size: 16px;
-    padding: 4px;
+    font-size: 32px;
+    padding: 0;
 }
 .gear:hover,
 .gear:focus-visible {

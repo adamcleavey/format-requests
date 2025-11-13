@@ -41,7 +41,7 @@ export default function Header({ count, adminActive, onAdminActivate }) {
   return (
     <header className={styles.header}>
       <div className={styles.wrap}>
-        <h1 className={styles.title}>Format Requests</h1>
+        <h1 className={styles.title}>Squarespace Image Format Support</h1>
         <div className={styles.row}>
           <span className={styles.chip}>{count} formats</span>
           <span className={styles.chip}>
@@ -76,7 +76,11 @@ export default function Header({ count, adminActive, onAdminActivate }) {
             ) : (
               <>
                 {adminActive && (
-                  <span className={styles.status} role="status" aria-live="polite">
+                  <span
+                    className={styles.status}
+                    role="status"
+                    aria-live="polite"
+                  >
                     Admin mode active
                   </span>
                 )}
