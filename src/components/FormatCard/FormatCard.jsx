@@ -6,6 +6,7 @@ const statusClass = (s) =>
     Supported: styles.supported,
     Planned: styles.planned,
     Requested: styles.requested,
+    "In Review": styles.review,
   })[s] || styles.requested;
 
 export default function FormatCard({
@@ -60,6 +61,7 @@ export default function FormatCard({
               <option>Requested</option>
               <option>Planned</option>
               <option>Supported</option>
+              <option>In Review</option>
             </select>
             <button className={styles.btn} onClick={() => onSaveStatus(edit)}>
               Save

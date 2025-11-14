@@ -9,6 +9,7 @@ import React, {
 import Header from "./components/Header/Header.jsx";
 import Toolbar from "./components/Toolbar/Toolbar.jsx";
 import AdminBar from "./components/AdminBar/AdminBar.jsx";
+import SubmitBar from "./components/SubmitBar/SubmitBar.jsx";
 import FormatCard from "./components/FormatCard/FormatCard.jsx";
 import * as style from "./App.module.css";
 import { seed } from "./data/seed";
@@ -179,13 +180,14 @@ export default function App() {
     };
   }, []);
 
-  useEffect(() => {
-    // If using API, fetch authoritative rows from the server on mount.
-    if (!USE_API) return;
-    (async () => {
+  const fetchFormats = useCallback(
+    async (adminKey?: string) => {
+      if (!USE_API) return;
       try {
+        const headers: HeadersInit = {};
+        if (adminKey) headers["x-admin-key"] = adminKey;
         const [rowsRes, votesRes] = await Promise.all([
-          fetch(`${API_BASE}/api/formats`),
+          fetch(`${API_BASE}/api/formats`, { headers }),
           fetch(`${API_BASE}/api/votes/${deviceId}`),
         ]);
         if (!rowsRes.ok) {
@@ -197,17 +199,22 @@ export default function App() {
         if (votesRes.ok) {
           votes = await votesRes.json();
         } else {
-          // Fallback to local votes if server request fails
           votes = Array.from(getVotesSet());
         }
         const votesSet = new Set(votes);
-        // Dispatch to replace rows and votes
         dispatch({ type: "setRows", rows, votes: Array.from(votesSet) });
       } catch (err) {
         console.error("Error fetching formats:", err);
       }
-    })();
-  }, []);
+    },
+    [dispatch],
+  );
+
+  useEffect(() => {
+    if (!USE_API) return;
+    const storedKey = getStoredAdminKey();
+    void fetchFormats(storedKey || undefined);
+  }, [fetchFormats]);
 
   useEffect(() => {
     if (!USE_API) return;
@@ -255,6 +262,7 @@ export default function App() {
         if (res.ok) {
           setStoredAdminKey(trimmed);
           dispatch({ type: "toggleAdmin", value: true });
+          await fetchFormats(trimmed);
         } else {
           setStoredAdminKey(null);
           dispatch({ type: "toggleAdmin", value: false });
@@ -265,7 +273,7 @@ export default function App() {
         dispatch({ type: "toggleAdmin", value: false });
       }
     },
-    [dispatch],
+    [dispatch, fetchFormats],
   );
 
   useEffect(() => {
@@ -280,6 +288,7 @@ export default function App() {
     const q = state.query.trim().toLowerCase();
     const filteredRows: Row[] = state.rows.filter(
       (r) =>
+        (state.admin || r.status !== "In Review") &&
         (!q || r.name.toLowerCase().includes(q)) &&
         (!state.kind || r.kind === state.kind) &&
         (!state.status || r.status === state.status),
@@ -397,6 +406,39 @@ export default function App() {
     scheduleReflow();
   };
 
+  const onSubmitFormat = async (name: string, kind: string) => {
+    if (USE_API) {
+      try {
+        const res = await fetch(`${API_BASE}/api/formats/submit`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: name.trim(),
+            kind,
+          }),
+        });
+        if (!res.ok) {
+          console.warn("Failed to submit format for review:", res.status);
+          return false;
+        }
+        return true;
+      } catch (err) {
+        console.error("Error submitting format:", err);
+        return false;
+      }
+    }
+    const row: Row = {
+      id: crypto.randomUUID(),
+      name: name.trim(),
+      kind,
+      status: "In Review",
+      created_at: new Date().toISOString(),
+      votes: 0,
+    };
+    dispatch({ type: "addRow", row });
+    return true;
+  };
+
   const onAdd = async (name: string, kind: string, status: string) => {
     if (USE_API) {
       try {
@@ -511,6 +553,7 @@ export default function App() {
         kind={state.kind}
         status={state.status}
         sort={state.sort}
+        admin={state.admin}
         onChange={(
           payload: Partial<Pick<State, "query" | "kind" | "status" | "sort">>,
         ) => dispatch({ type: "setFilter", payload })}
@@ -531,6 +574,7 @@ export default function App() {
           ))}
         </div>
       </main>
+      <SubmitBar onSubmit={onSubmitFormat} />
     </div>
   );
 }

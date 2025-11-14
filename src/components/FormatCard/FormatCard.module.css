@@ -57,6 +57,12 @@
     border-color: var(--accent-soft);
 }
 
+.review {
+    background: #e8ebff;
+    color: #2f3c96;
+    border-color: #c9d0ff;
+}
+
 .actions {
     display: flex;
     gap: 12px;

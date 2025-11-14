@@ -35,6 +35,8 @@ import fs from "fs";
  */
 
 /* --- Types --- */
+const STATUS_IN_REVIEW = "In Review";
+
 type FormatRow = {
   id: string;
   name: string;
@@ -94,9 +96,13 @@ function extractAdminKey(req: Request): string | undefined {
   return headerKey || bodyKey || queryKey;
 }
 
-function requireAdmin(req: Request, res: Response, next: NextFunction) {
+function isAdminRequest(req: Request): boolean {
   const key = extractAdminKey(req);
-  if (!key || String(key) !== ADMIN_KEY) {
+  return !!key && String(key) === ADMIN_KEY;
+}
+
+function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  if (!isAdminRequest(req)) {
     return res.status(401).json({ error: "unauthorized" });
   }
   return next();
@@ -162,6 +168,7 @@ app.get("/api/formats", async (req: Request, res: Response) => {
   const whereClauses: string[] = [];
   const values: unknown[] = [];
   let idx = 1;
+  const isAdmin = isAdminRequest(req);
 
   if (q) {
     whereClauses.push(`LOWER(name) LIKE $${idx++}`);
@@ -174,6 +181,10 @@ app.get("/api/formats", async (req: Request, res: Response) => {
   if (status) {
     whereClauses.push(`status = $${idx++}`);
     values.push(status);
+  }
+  if (!isAdmin) {
+    whereClauses.push(`status <> $${idx++}`);
+    values.push(STATUS_IN_REVIEW);
   }
 
   const whereSql = whereClauses.length
@@ -207,6 +218,30 @@ app.get("/api/formats", async (req: Request, res: Response) => {
     return res.json(rows);
   } catch (err) {
     console.error("GET /api/formats error:", err);
+    return sendError(res, 500, "db_error");
+  }
+});
+
+/**
+ * POST /api/formats/submit
+ * Allows non-admin users to submit a format for review. Always stores as "In Review".
+ */
+app.post("/api/formats/submit", async (req: Request, res: Response) => {
+  const name = typeof req.body?.name === "string" ? req.body.name.trim() : "";
+  const kind = typeof req.body?.kind === "string" ? req.body.kind.trim() : "";
+  if (!name || !kind) return sendError(res, 400, "missing_fields");
+
+  try {
+    const { rows } = await pool.query<FormatRow>(
+      "INSERT INTO formats (name, kind, status) VALUES ($1, $2, $3) RETURNING id, name, kind, status, created_at, votes",
+      [name, kind, STATUS_IN_REVIEW],
+    );
+    return res.status(201).json(rows[0]);
+  } catch (err: any) {
+    console.error("POST /api/formats/submit error:", err);
+    if (err?.code === "23505") {
+      return sendError(res, 409, "duplicate_name");
+    }
     return sendError(res, 500, "db_error");
   }
 });

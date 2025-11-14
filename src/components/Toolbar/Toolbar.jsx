@@ -1,7 +1,14 @@
 import React from "react";
 import * as styles from "./Toolbar.module.css";
 
-export default function Toolbar({ query, kind, status, sort, onChange }) {
+export default function Toolbar({
+  query,
+  kind,
+  status,
+  sort,
+  admin = false,
+  onChange,
+}) {
   return (
     <div className={styles.bar}>
       <div className={styles.barInner}>
@@ -31,6 +38,7 @@ export default function Toolbar({ query, kind, status, sort, onChange }) {
           <option>Requested</option>
           <option>Planned</option>
           <option>Supported</option>
+          {admin && <option>In Review</option>}
         </select>
         <select
           className={styles.select}

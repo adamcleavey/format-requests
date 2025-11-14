@@ -33,6 +33,7 @@ export default function AdminBar({ visible, onAdd }) {
         <option>Requested</option>
         <option>Planned</option>
         <option>Supported</option>
+        <option>In Review</option>
       </select>
       <button
         className={styles.btn}
